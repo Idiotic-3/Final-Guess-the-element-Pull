@@ -6,34 +6,33 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { ElementData } from "@/types/game";
+import { questions } from "@/data/questions";
+import { getRandomElement } from "@/lib/utils";
+import { PeriodicTable } from "@/components/periodic-table/periodic-table";
+import { QuestionPanel } from "./question-panel";
 import { StreakDisplay } from "./streak-display";
 import { AchievementsPanel } from "./achievements/achievements-panel";
-import { PeriodicTable } from "./periodic-table/periodic-table";
-import { QuestionPanel } from "./question-panel";
-import { achievements as defaultAchievements } from "@/data/achievements";
+import { Loader2 } from "lucide-react";
 import { Achievement } from "@/types/achievements";
-import { elementData } from "@/data/elements";
-import { questions } from "@/data/questions";
-import { ElementData, Question } from "@/types/game";
-import { Loader2, ArrowLeft } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function Game() {
   const auth = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  // Symbol guessing game state
-  const [currentElement, setCurrentElement] = useState(getRandomElement());
-  const [guess, setGuess] = useState("");
-  // Question game state
-  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(getRandomQuestion());
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [isLogin, setIsLogin] = useState(true);
+
+  // Game state
+  const [currentQuestion, setCurrentQuestion] = useState(questions[0]);
   const [selectedElement, setSelectedElement] = useState<ElementData | null>(null);
-  // Shared state
   const [score, setScore] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
-  const [achievements, setAchievements] = useState<Achievement[]>(defaultAchievements);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   const loadUserData = useCallback(async () => {
     if (!auth.session?.user) return;
@@ -69,14 +68,6 @@ export function Game() {
     }
   }, [auth.session?.user, loadUserData]);
 
-  function getRandomElement() {
-    return elementData[Math.floor(Math.random() * elementData.length)];
-  }
-
-  function getRandomQuestion() {
-    return questions[Math.floor(Math.random() * questions.length)];
-  }
-
   async function handleElementClick(element: ElementData) {
     if (!auth.session?.user || !currentQuestion) return;
     setSelectedElement(element);
@@ -91,7 +82,7 @@ export function Game() {
       });
       setTimeout(() => {
         setSelectedElement(null);
-        setCurrentQuestion(getRandomQuestion());
+        setCurrentQuestion(questions[Math.floor(Math.random() * questions.length)]);
       }, 1500);
     } else {
       toast({
@@ -100,33 +91,6 @@ export function Game() {
         description: `Try again! Hint: ${currentQuestion.hint}`,
       });
     }
-  }
-
-  async function handleGuess(e: React.FormEvent) {
-    e.preventDefault();
-    if (!auth.session?.user) return;
-
-    setLoading(true);
-    const isCorrect = guess.toLowerCase() === currentElement.name.toLowerCase();
-    handleAnswer(isCorrect);
-    
-    if (isCorrect) {
-      toast({
-        title: "Correct! ",
-        description: `That's right! It's ${currentElement.name}`,
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Incorrect",
-        description: `The correct answer was ${currentElement.name}`,
-      });
-    }
-
-    // Reset for next round
-    setGuess("");
-    setCurrentElement(getRandomElement());
-    setLoading(false);
   }
 
   async function handleAnswer(isCorrect: boolean) {
@@ -213,6 +177,94 @@ export function Game() {
     }
   }
 
+  // If not authenticated, show login/signup form
+  if (!auth.session?.user) {
+    return (
+      <div className="container max-w-7xl mx-auto p-4">
+        <Card className="p-6 text-center space-y-4">
+          <h2 className="text-2xl font-bold">{isLogin ? "Log In" : "Sign Up"} to Play</h2>
+          <p className="text-muted-foreground">You need to be logged in to play the game and track your progress.</p>
+          
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            try {
+              if (isLogin) {
+                await auth.signIn(email, password);
+              } else {
+                await auth.signUp(email, password, username);
+                toast({
+                  title: "Success",
+                  description: "Please check your email to verify your account."
+                });
+              }
+            } catch (error) {
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description: error.message || "Failed to authenticate. Please try again."
+              });
+            } finally {
+              setLoading(false);
+            }
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+              {!isLogin && (
+                <Input
+                  type="text"
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={loading}
+                />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isLogin ? "Log In" : "Sign Up")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => auth.signInWithGoogle()}
+                disabled={loading}
+              >
+                Continue with Google
+              </Button>
+            </div>
+          </form>
+
+          <div className="text-sm text-muted-foreground">
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              type="button"
+              className="underline hover:text-primary"
+              onClick={() => setIsLogin(!isLogin)}
+              disabled={loading}
+            >
+              {isLogin ? "Sign up" : "Log in"}
+            </button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container max-w-7xl mx-auto p-4 space-y-6">
       <div className="flex justify-between items-center">
@@ -223,66 +275,23 @@ export function Game() {
         <AchievementsPanel achievements={achievements} />
       </div>
 
-      <Tabs defaultValue="symbol" className="w-full">
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-          <TabsTrigger value="symbol">Symbol Game</TabsTrigger>
-          <TabsTrigger value="periodic">Periodic Table Game</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="symbol" className="mt-6">
-          <Card className="p-6 text-center space-y-4">
-            <div className="text-6xl font-bold mb-4">{currentElement.symbol}</div>
-            <div className="text-2xl text-muted-foreground mb-4">
-              Atomic Number: {currentElement.atomicNumber}
-            </div>
-            
-            <form onSubmit={handleGuess} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="guess">Enter element name:</Label>
-                <Input
-                  id="guess"
-                  value={guess}
-                  onChange={(e) => setGuess(e.target.value)}
-                  placeholder="Type your answer..."
-                  disabled={loading}
-                />
-              </div>
-              
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Submit Answer"
-                )}
-              </Button>
-            </form>
-
-            <div className="text-sm text-muted-foreground">
-              Score: {score}/{totalQuestions}
-            </div>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="periodic" className="mt-6">
-          {currentQuestion && (
-            <>
-              <QuestionPanel
-                question={currentQuestion}
-                questionNumber={totalQuestions}
-                score={score}
-                totalQuestions={totalQuestions}
-              />
-              <div className="mt-6">
-                <PeriodicTable
-                  onElementClick={handleElementClick}
-                  selectedElement={selectedElement}
-                  correctElement={currentQuestion.correctElement}
-                />
-              </div>
-            </>
-          )}
-        </TabsContent>
-      </Tabs>
+      {currentQuestion && (
+        <>
+          <QuestionPanel
+            question={currentQuestion}
+            questionNumber={totalQuestions}
+            score={score}
+            totalQuestions={totalQuestions}
+          />
+          <div className="mt-6">
+            <PeriodicTable
+              onElementClick={handleElementClick}
+              selectedElement={selectedElement}
+              correctElement={currentQuestion.correctElement}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

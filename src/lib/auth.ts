@@ -12,6 +12,7 @@ export type AuthContextType = {
   session: AuthState
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, username: string) => Promise<void>
+  signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -19,5 +20,6 @@ export const AuthContext = createContext<AuthContextType>({
   session: { user: null, profile: null, loading: true },
   signIn: async () => {},
   signUp: async () => {},
+  signInWithGoogle: async () => {},
   signOut: async () => {},
 })

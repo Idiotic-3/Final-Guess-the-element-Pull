@@ -1,1 +1,26 @@
-project_id = "yhwpnavhhhbwzwymarug"
+# Supabase Project Configuration
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost:54321"
+
+# Add your project URL here
+project_url = "https://mtkxcbgnfhfhurakmjlb.supabase.co"
+
+# Authentication
+[auth]
+enabled = true
+jwt_secret = "your-super-secret-jwt-token-with-at-least-32-characters-long"
