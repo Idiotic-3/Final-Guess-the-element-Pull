@@ -63,6 +63,16 @@ const Index = () => {
     setCurrentQuestion(getRandomElement(questions));
   };
 
+  const resetGame = () => {
+    setScore(0);
+    setStreak(0);
+    setCurrentQuestion(getRandomElement(questions));
+    toast({
+      title: "Game Reset",
+      description: "Score and streak have been reset.",
+    });
+  };
+
   const saveProgress = async (isCorrect: boolean) => {
     if (!session.user) return;
 
@@ -258,7 +268,11 @@ const Index = () => {
   return (
     <div className="container mx-auto p-4 space-y-8">
       <div className="flex justify-between items-center">
-        <ScoreBoard score={score} streak={streak} />
+        <ScoreBoard 
+          score={score} 
+          streak={streak} 
+          resetGame={resetGame}
+        />
         {!session.user ? (
           <Button variant="outline" onClick={() => setShowAuth(true)}>
             Sign In to Save Progress
