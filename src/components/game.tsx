@@ -15,6 +15,7 @@ import { StreakDisplay } from "./streak-display";
 import { AchievementsPanel } from "./achievements/achievements-panel";
 import { Loader2 } from "lucide-react";
 import { Achievement } from "@/types/achievements";
+import { PostgrestError } from "@supabase/supabase-js";
 
 export function Game() {
   const auth = useAuth();
@@ -194,15 +195,27 @@ export function Game() {
               } else {
                 await auth.signUp(email, password, username);
                 toast({
-                  title: "Success",
+                  title: "Account Created",
                   description: "Please check your email to verify your account."
                 });
               }
-            } catch (error) {
+            } catch (error: Error | PostgrestError) {
+              let errorMessage = "An unexpected error occurred. Please try again.";
+              
+              if ('message' in error && error.message) {
+                if (error.message.includes("duplicate key")) {
+                  errorMessage = "This username is already taken. Please choose another.";
+                } else if (error.message.includes("User already registered")) {
+                  errorMessage = "This email is already registered. Please log in instead.";
+                } else {
+                  errorMessage = error.message;
+                }
+              }
+
               toast({
                 variant: "destructive",
                 title: "Error",
-                description: error.message || "Failed to authenticate. Please try again."
+                description: errorMessage
               });
             } finally {
               setLoading(false);

@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error
 
     if (user) {
-      // Create profile
+      // Create profile and initialize user data
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -91,6 +91,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
 
       if (profileError) throw profileError
+
+      // Initialize user streaks
+      const { error: streakError } = await supabase
+        .from('user_streaks')
+        .insert({
+          user_id: user.id,
+          current_streak: 0,
+          longest_streak: 0,
+          last_game_date: new Date().toISOString(),
+        })
+
+      if (streakError) throw streakError
     }
   }
 
