@@ -6,12 +6,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { ElementData } from "@/types/game";
+import { ElementData, Question } from "@/types/game";
 import { questions } from "@/data/questions";
 import { getRandomElement } from "@/lib/utils";
-import { PeriodicTable } from "@/components/periodic-table/periodic-table";
-import { QuestionPanel } from "./question-panel";
-import { ScoreBoard } from "./score-board";
+import { elementData } from "@/data/elements";
+import PeriodicTable from "@/components/PeriodicTable";
+import QuestionPanel from "@/components/QuestionPanel";
+import ScoreBoard from "@/components/ScoreBoard";
 import { Loader2 } from "lucide-react";
 
 export function Game() {
@@ -25,34 +26,28 @@ export function Game() {
   const [showAuth, setShowAuth] = useState(false);
 
   // Game state
-  const [currentQuestion, setCurrentQuestion] = useState<ElementData | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(getRandomElement(questions));
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
 
-  useEffect(() => {
-    if (gameStarted && !currentQuestion) {
-      setCurrentQuestion(getRandomElement(questions));
-    }
-  }, [gameStarted, currentQuestion]);
-
-  const handleAnswer = async (answer: string) => {
+  const handleElementClick = (element: ElementData) => {
     if (!currentQuestion) return;
 
-    const isCorrect = answer.toLowerCase() === currentQuestion.symbol.toLowerCase();
+    const isCorrect = element.symbol.toLowerCase() === currentQuestion.correctElement.toLowerCase();
     
     if (isCorrect) {
       setScore(s => s + 1);
       setStreak(s => s + 1);
       toast({
         title: "Correct!",
-        description: `That's right! It's ${currentQuestion.name} (${currentQuestion.symbol})`,
+        description: `That's right! It's ${element.name} (${element.symbol})`,
       });
     } else {
       setStreak(0);
       toast({
         title: "Incorrect",
-        description: `The correct answer was ${currentQuestion.name} (${currentQuestion.symbol})`,
+        description: `The correct answer was ${currentQuestion.correctElement}`,
         variant: "destructive",
       });
     }
@@ -60,13 +55,23 @@ export function Game() {
     // If user is logged in, save their progress
     if (session.user) {
       try {
-        await saveProgress(isCorrect);
+        saveProgress(isCorrect);
       } catch (error) {
         console.error('Error saving progress:', error);
       }
     }
 
     setCurrentQuestion(getRandomElement(questions));
+  };
+
+  const resetGame = () => {
+    setScore(0);
+    setStreak(0);
+    setCurrentQuestion(getRandomElement(questions));
+    toast({
+      title: "Game Reset",
+      description: "Score and streak have been reset.",
+    });
   };
 
   const saveProgress = async (isCorrect: boolean) => {
@@ -248,9 +253,12 @@ export function Game() {
               type="button"
               variant="outline"
               className="w-full"
-              onClick={() => setShowAuth(false)}
+              onClick={() => {
+                setShowAuth(false);
+                setGameStarted(true);
+              }}
             >
-              Back to Game
+              Continue as Guest
             </Button>
           </form>
         </Card>
@@ -261,7 +269,11 @@ export function Game() {
   return (
     <div className="container mx-auto p-4 space-y-8">
       <div className="flex justify-between items-center">
-        <ScoreBoard score={score} streak={streak} />
+        <ScoreBoard 
+          score={score} 
+          streak={streak} 
+          resetGame={resetGame}
+        />
         {!session.user ? (
           <Button variant="outline" onClick={() => setShowAuth(true)}>
             Sign In to Save Progress
@@ -277,9 +289,12 @@ export function Game() {
         <>
           <QuestionPanel
             question={currentQuestion}
-            onAnswer={handleAnswer}
+            onAnswer={handleElementClick}
           />
-          <PeriodicTable highlightedElement={currentQuestion.symbol} />
+          <PeriodicTable 
+            onElementClick={handleElementClick}
+            highlightedElement={currentQuestion.correctElement}
+          />
         </>
       )}
     </div>

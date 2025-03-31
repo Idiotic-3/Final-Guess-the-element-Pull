@@ -1,11 +1,11 @@
-import { Question } from "@/types/game";
+import { Question, ElementData } from "@/types/game";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HelpCircle } from "lucide-react";
 
 interface QuestionPanelProps {
   question: Question;
-  onAnswer: (answer: string) => void;
+  onAnswer: (element: ElementData) => void;
 }
 
 const QuestionPanel = ({ question, onAnswer }: QuestionPanelProps) => {

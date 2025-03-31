@@ -1,11 +1,11 @@
-
 export interface ElementData {
   name: string;
   symbol: string;
-  atomicNumber: number;
+  number: number;
   category: string;
-  group: number;
-  period: number;
+  atomic_mass: number;
+  xpos: number;
+  ypos: number;
 }
 
 export interface Question {

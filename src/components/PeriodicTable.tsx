@@ -66,7 +66,9 @@ const PeriodicTable = ({ onElementClick, highlightedElement }: PeriodicTableProp
         {viewMode === "standard" && (
           <>
             <div className="text-xs truncate max-w-full">{element.name}</div>
-            <div className="text-xs text-muted-foreground">{element.atomic_mass.toFixed(2)}</div>
+            <div className="text-xs text-muted-foreground">
+              {typeof element.atomic_mass === 'number' ? element.atomic_mass.toFixed(2) : '—'}
+            </div>
           </>
         )}
       </button>
