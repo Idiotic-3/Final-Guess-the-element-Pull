@@ -12,7 +12,10 @@ interface PeriodicTableProps {
 export function PeriodicTable({ onElementClick, selectedElement, correctElement }: PeriodicTableProps) {
   const getElementColor = (element: ElementData) => {
     if (selectedElement?.symbol === element.symbol) {
-      return correctElement === element.symbol ? "bg-green-500" : "bg-red-500";
+      if (correctElement === element.symbol) {
+        return "bg-green-500 text-white hover:bg-green-600";
+      }
+      return "bg-red-500 text-white hover:bg-red-600";
     }
     
     switch (element.category) {
@@ -39,27 +42,48 @@ export function PeriodicTable({ onElementClick, selectedElement, correctElement 
     }
   };
 
+  // Create a grid with empty cells
+  const grid = Array.from({ length: 10 }, () => Array.from({ length: 18 }, () => null));
+
+  // Place elements in their correct positions
+  elementData.forEach(element => {
+    if (element.period <= 7) {
+      grid[element.period - 1][element.group - 1] = element;
+    } else if (element.period === 8) {
+      // Lanthanides
+      grid[8][element.group - 1] = element;
+    } else if (element.period === 9) {
+      // Actinides
+      grid[9][element.group - 1] = element;
+    }
+  });
+
   return (
-    <div className="grid grid-cols-18 gap-1 p-4 max-w-[1200px] mx-auto">
-      {elementData.map((element) => {
-        const gridArea = `${element.period} / ${element.group} / ${element.period + 1} / ${element.group + 1}`;
-        
-        return (
-          <Card
-            key={element.symbol}
-            className={cn(
-              "aspect-square flex flex-col items-center justify-center p-1 cursor-pointer transition-colors",
-              getElementColor(element)
-            )}
-            style={{ gridArea }}
-            onClick={() => onElementClick(element)}
-          >
-            <div className="text-xs font-mono opacity-50">{element.atomicNumber}</div>
-            <div className="text-lg font-bold">{element.symbol}</div>
-            <div className="text-[10px] text-center truncate">{element.name}</div>
-          </Card>
-        );
-      })}
+    <div className="w-full overflow-x-auto">
+      <div className="min-w-[1200px] p-4">
+        <div className="grid grid-cols-18 gap-1">
+          {grid.map((row, rowIndex) =>
+            row.map((element, colIndex) =>
+              element ? (
+                <Card
+                  key={element.symbol}
+                  className={cn(
+                    "element-card aspect-square flex flex-col items-center justify-center p-1 cursor-pointer transition-colors text-center",
+                    getElementColor(element)
+                  )}
+                  onClick={() => onElementClick(element)}
+                >
+                  <div className="text-xs font-mono opacity-50">{element.atomicNumber}</div>
+                  <div className="text-lg font-bold">{element.symbol}</div>
+                  <div className="text-[10px] truncate w-full">{element.name}</div>
+                </Card>
+              ) : (
+                <div key={`empty-${rowIndex}-${colIndex}`} className="aspect-square" />
+              )
+            )
+          )}
+        </div>
+      </div>
     </div>
   );
 }

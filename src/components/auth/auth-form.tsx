@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Loader2 } from "lucide-react"
 
 export function AuthForm() {
   const { signIn, signUp } = useAuth()
@@ -36,21 +37,22 @@ export function AuthForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Welcome to Element Guessing Game</CardTitle>
-        <CardDescription>Sign in or create an account to track your progress</CardDescription>
+        <CardTitle>Welcome to Element Guesser</CardTitle>
+        <CardDescription>Sign in or create an account to start playing</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="signin">
+        <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
+          
           <TabsContent value="signin">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="signin-email">Email</Label>
                 <Input
-                  id="email"
+                  id="signin-email"
                   type="email"
                   placeholder="Enter your email"
                   value={email}
@@ -59,9 +61,9 @@ export function AuthForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="signin-password">Password</Label>
                 <Input
-                  id="password"
+                  id="signin-password"
                   type="password"
                   placeholder="Enter your password"
                   value={password}
@@ -70,10 +72,15 @@ export function AuthForm() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
           </TabsContent>
+          
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
@@ -88,17 +95,6 @@ export function AuthForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Choose a username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="signup-password">Password</Label>
                 <Input
                   id="signup-password"
@@ -109,8 +105,22 @@ export function AuthForm() {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-username">Username</Label>
+                <Input
+                  id="signup-username"
+                  placeholder="Choose a username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing up..." : "Sign Up"}
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Sign Up"
+                )}
               </Button>
             </form>
           </TabsContent>
