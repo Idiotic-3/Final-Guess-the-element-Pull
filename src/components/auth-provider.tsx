@@ -1,32 +1,12 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-
-export interface AuthState {
-  user: User | null
-  profile: any | null
-  isLoading: boolean
-}
-
-export const AuthContext = createContext<{
-  session: AuthState
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, username: string) => Promise<void>
-  signOut: () => Promise<void>
-  signInWithGoogle: () => Promise<void>
-}>({
-  session: { user: null, profile: null, isLoading: true },
-  signIn: async () => {},
-  signUp: async () => {},
-  signOut: async () => {},
-  signInWithGoogle: async () => {},
-})
+import { AuthContext, AuthState, Profile } from '@/lib/auth-context'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthState>({
     user: null,
     profile: null,
-    isLoading: true,
+    loading: true,
   })
 
   useEffect(() => {
@@ -35,14 +15,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession({
           user: session.user,
           profile: null,
-          isLoading: true,
+          loading: true,
         })
         fetchProfile(session.user.id)
       } else {
         setSession({
           user: null,
           profile: null,
-          isLoading: false,
+          loading: false,
         })
       }
     })
@@ -53,14 +33,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession({
             user: session.user,
             profile: null,
-            isLoading: true,
+            loading: true,
           })
           await fetchProfile(session.user.id)
         } else {
           setSession({
             user: null,
             profile: null,
-            isLoading: false,
+            loading: false,
           })
         }
       }
@@ -80,14 +60,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (error) {
       console.error('Error fetching profile:', error)
-      setSession(s => ({ ...s, isLoading: false }))
+      setSession(s => ({ ...s, loading: false }))
       return
     }
 
     setSession(s => ({
       ...s,
-      profile: data,
-      isLoading: false,
+      profile: data as Profile,
+      loading: false,
     }))
   }
 
@@ -126,19 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error
   }
 
-  const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
-
-    if (error) throw error
-  }
-
   return (
-    <AuthContext.Provider value={{ session, signIn, signUp, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ session, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   )

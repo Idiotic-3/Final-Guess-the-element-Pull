@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { ScoreBoard } from "./score-board";
 import { Loader2 } from "lucide-react";
 
 export function Game() {
-  const auth = useAuth();
+  const { session, signIn, signUp, signOut } = useAuth();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -57,7 +58,7 @@ export function Game() {
     }
 
     // If user is logged in, save their progress
-    if (auth.session.user) {
+    if (session.user) {
       try {
         await saveProgress(isCorrect);
       } catch (error) {
@@ -69,13 +70,13 @@ export function Game() {
   };
 
   const saveProgress = async (isCorrect: boolean) => {
-    if (!auth.session.user) return;
+    if (!session.user) return;
 
     const timestamp = new Date().toISOString();
     
     // Save game history
     await supabase.from('game_history').insert({
-      user_id: auth.session.user.id,
+      user_id: session.user.id,
       correct: isCorrect,
       played_at: timestamp,
     });
@@ -84,17 +85,17 @@ export function Game() {
     if (isCorrect) {
       await supabase.from('user_streaks')
         .upsert({
-          user_id: auth.session.user.id,
+          user_id: session.user.id,
           current_streak: streak + 1,
-          longest_streak: Math.max(streak + 1, auth.session.profile?.longest_streak || 0),
+          longest_streak: Math.max(streak + 1, session.profile?.longest_streak || 0),
           last_game_date: timestamp,
         });
     } else {
       await supabase.from('user_streaks')
         .upsert({
-          user_id: auth.session.user.id,
+          user_id: session.user.id,
           current_streak: 0,
-          longest_streak: auth.session.profile?.longest_streak || 0,
+          longest_streak: session.profile?.longest_streak || 0,
           last_game_date: timestamp,
         });
     }
@@ -105,24 +106,42 @@ export function Game() {
     setLoading(true);
     try {
       if (isLogin) {
-        await auth.signIn(email, password);
+        await signIn(email, password);
       } else {
-        await auth.signUp(email, password, username);
+        await signUp(email, password, username);
         toast({
           title: "Account Created",
           description: "Please check your email to verify your account.",
         });
       }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to authenticate",
-      });
+      setShowAuth(false); // Hide auth form after successful login/signup
+    } catch (error) {
+      if (error instanceof Error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to authenticate",
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Show loading spinner only during initial auth check
+  if (session.loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (!gameStarted) {
     return (
@@ -153,7 +172,10 @@ export function Game() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => setShowAuth(true)}
+              onClick={() => {
+                setShowAuth(true);
+                setGameStarted(true);
+              }}
             >
               Sign In to Save Progress
             </Button>
@@ -240,12 +262,12 @@ export function Game() {
     <div className="container mx-auto p-4 space-y-8">
       <div className="flex justify-between items-center">
         <ScoreBoard score={score} streak={streak} />
-        {!auth.session.user ? (
+        {!session.user ? (
           <Button variant="outline" onClick={() => setShowAuth(true)}>
             Sign In to Save Progress
           </Button>
         ) : (
-          <Button variant="outline" onClick={() => auth.signOut()}>
+          <Button variant="outline" onClick={() => signOut()}>
             Sign Out
           </Button>
         )}

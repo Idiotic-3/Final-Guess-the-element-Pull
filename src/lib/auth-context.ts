@@ -1,14 +1,20 @@
 import { createContext } from 'react'
 import { User } from '@supabase/supabase-js'
-import { Profile } from './supabase'
 
-export type AuthState = {
+export interface Profile {
+  id: string
+  username: string
+  created_at: string
+  longest_streak?: number
+}
+
+export interface AuthState {
   user: User | null
   profile: Profile | null
   loading: boolean
 }
 
-export type AuthContextType = {
+export interface AuthContextType {
   session: AuthState
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, username: string) => Promise<void>
