@@ -30,13 +30,13 @@ const PeriodicTable = ({ onElementClick, highlightedElement }: PeriodicTableProp
   const getElementColor = (category: string) => {
     const colors = {
       "nonmetal": "bg-emerald-100 hover:bg-emerald-200",
-      "noble-gas": "bg-purple-100 hover:bg-purple-200",
-      "alkali-metal": "bg-red-100 hover:bg-red-200",
-      "alkaline-earth": "bg-orange-100 hover:bg-orange-200",
+      "noble gas": "bg-purple-100 hover:bg-purple-200",
+      "alkali metal": "bg-red-100 hover:bg-red-200",
+      "alkaline earth metal": "bg-orange-100 hover:bg-orange-200",
       "metalloid": "bg-teal-100 hover:bg-teal-200",
       "halogen": "bg-yellow-100 hover:bg-yellow-200",
-      "transition": "bg-blue-100 hover:bg-blue-200",
-      "post-transition": "bg-indigo-100 hover:bg-indigo-200",
+      "transition metal": "bg-blue-100 hover:bg-blue-200",
+      "post-transition metal": "bg-indigo-100 hover:bg-indigo-200",
       "actinide": "bg-pink-100 hover:bg-pink-200",
       "lanthanide": "bg-rose-100 hover:bg-rose-200",
     };
@@ -59,7 +59,12 @@ const PeriodicTable = ({ onElementClick, highlightedElement }: PeriodicTableProp
           highlightClasses,
           "hover:scale-105 transition-transform"
         )}
-        style={{ gridColumn: element.xpos, gridRow: element.ypos }}
+        style={{ 
+          gridColumn: element.xpos, 
+          gridRow: element.ypos,
+          width: "100%",
+          height: "100%"
+        }}
       >
         <div className="text-xs font-mono text-muted-foreground">{element.number}</div>
         <div className="text-base font-bold">{element.symbol}</div>
@@ -88,7 +93,7 @@ const PeriodicTable = ({ onElementClick, highlightedElement }: PeriodicTableProp
           <SelectContent>
             {categories.map(category => (
               <SelectItem key={category} value={category}>
-                {category.charAt(0).toUpperCase() + category.slice(1).replace("-", " ")}
+                {category.charAt(0).toUpperCase() + category.slice(1)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -99,25 +104,24 @@ const PeriodicTable = ({ onElementClick, highlightedElement }: PeriodicTableProp
           onValueChange={setViewMode}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select view mode" />
+            <SelectValue placeholder="View mode" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="standard">Standard View</SelectItem>
-            <SelectItem value="compact">Compact View</SelectItem>
+            <SelectItem value="standard">Standard</SelectItem>
+            <SelectItem value="compact">Compact</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="relative w-full aspect-[18/10] bg-card rounded-lg p-4 overflow-x-auto">
-        <div 
-          className="grid gap-1 h-full"
-          style={{
-            gridTemplateColumns: "repeat(18, minmax(50px, 1fr))",
-            gridTemplateRows: "repeat(10, 1fr)",
-          }}
-        >
-          {filteredElements.map(renderElement)}
-        </div>
+      <div 
+        className="grid gap-1 relative" 
+        style={{
+          gridTemplateColumns: "repeat(18, minmax(0, 1fr))",
+          gridTemplateRows: "repeat(10, minmax(0, 1fr))",
+          aspectRatio: "18/10"
+        }}
+      >
+        {filteredElements.map(renderElement)}
       </div>
     </div>
   );

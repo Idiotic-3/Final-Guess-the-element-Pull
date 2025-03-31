@@ -5,7 +5,7 @@ export interface Profile {
   id: string
   username: string
   created_at: string
-  longest_streak?: number
+  longest_streak: number
 }
 
 export interface AuthState {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { AuthContext, AuthState, Profile } from '@/lib/auth-context'
+import { User } from '@supabase/supabase-js'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthState>({
@@ -10,14 +11,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   })
 
   useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setSession({
-          user: session.user,
-          profile: null,
-          loading: true,
-        })
-        fetchProfile(session.user.id)
+        setSession(s => ({ ...s, user: session.user }))
+        getProfile(session.user.id)
+      } else {
+        setSession(s => ({ ...s, loading: false }))
+      }
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setSession(s => ({ ...s, user: session.user }))
+        getProfile(session.user.id)
       } else {
         setSession({
           user: null,
@@ -27,31 +35,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session) {
-          setSession({
-            user: session.user,
-            profile: null,
-            loading: true,
-          })
-          await fetchProfile(session.user.id)
-        } else {
-          setSession({
-            user: null,
-            profile: null,
-            loading: false,
-          })
-        }
-      }
-    )
-
-    return () => {
-      subscription.unsubscribe()
-    }
+    return () => subscription.unsubscribe()
   }, [])
 
-  const fetchProfile = async (userId: string) => {
+  const getProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -81,23 +68,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, username: string) => {
-    const { data: { user }, error } = await supabase.auth.signUp({
+    // First create the auth user
+    const { data: { user }, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     })
 
-    if (error) throw error
+    if (signUpError) throw signUpError
+    if (!user) throw new Error('No user returned after signup')
 
-    if (user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: user.id,
-          username,
-          created_at: new Date().toISOString(),
-        })
+    try {
+      // Then create their profile
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: user.id,
+        username,
+        created_at: new Date().toISOString(),
+        longest_streak: 0,
+      })
 
       if (profileError) throw profileError
+    } catch (error) {
+      // If profile creation fails, delete the auth user to maintain consistency
+      await supabase.auth.admin.deleteUser(user.id)
+      throw error
     }
   }
 
