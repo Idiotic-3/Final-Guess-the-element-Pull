@@ -2,6 +2,7 @@
 create table profiles (
   id uuid references auth.users on delete cascade primary key,
   username text not null unique,
+  longest_streak integer default 0 not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -28,6 +29,14 @@ create policy "Users can update their own profile"
   on profiles for update
   using (auth.uid() = id);
 
+create policy "Public profiles are viewable by everyone"
+  on profiles for select
+  using (true);
+
+create policy "Users can insert their own profile"
+  on profiles for insert
+  with check (auth.uid() = id);
+
 create policy "Users can view their own game history"
   on game_history for select
   using (auth.uid() = user_id);
@@ -49,7 +58,7 @@ $$ language plpgsql;
 create trigger handle_profiles_updated_at
   before update on profiles
   for each row
-  execute procedure handle_updated_at();
+  execute function handle_updated_at();
 
 -- Create function to automatically create a profile for new users
 create or replace function public.handle_new_user()

@@ -68,28 +68,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, username: string) => {
-    // First create the auth user
-    const { data: { user }, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-
-    if (signUpError) throw signUpError
-    if (!user) throw new Error('No user returned after signup')
-
+    console.log('Starting signup process...')
+    
     try {
-      // Then create their profile
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: user.id,
-        username,
-        created_at: new Date().toISOString(),
-        longest_streak: 0,
+      // First create the auth user
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username // Store username in auth metadata
+          }
+        }
       })
 
-      if (profileError) throw profileError
+      if (signUpError) {
+        console.error('Signup error:', signUpError)
+        throw signUpError
+      }
+
+      if (!data.user) {
+        console.error('No user returned after signup')
+        throw new Error('No user returned after signup')
+      }
+
+      console.log('Auth user created, creating profile...')
+
+      // Then create their profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          username,
+          created_at: new Date().toISOString(),
+          longest_streak: 0
+        })
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError)
+        // If profile creation fails, we should clean up the auth user
+        await supabase.auth.admin.deleteUser(data.user.id)
+        throw profileError
+      }
+
+      console.log('Profile created successfully')
     } catch (error) {
-      // If profile creation fails, delete the auth user to maintain consistency
-      await supabase.auth.admin.deleteUser(user.id)
+      console.error('Signup process error:', error)
       throw error
     }
   }
