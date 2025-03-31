@@ -1,37 +1,24 @@
-
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
 interface ScoreBoardProps {
   score: number;
-  questionNumber: number;
+  streak: number;
   resetGame: () => void;
 }
 
-const ScoreBoard = ({ score, questionNumber, resetGame }: ScoreBoardProps) => {
-  const calculatePercentage = () => {
-    if (questionNumber === 0) return 0;
-    return Math.round((score / questionNumber) * 100);
-  };
-
+const ScoreBoard = ({ score, streak, resetGame }: ScoreBoardProps) => {
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
-      <div className="flex justify-between items-center">
-        <div className="text-center flex-1">
-          <p className="text-gray-600 text-sm">Score</p>
+    <div className="bg-card text-card-foreground rounded-lg shadow-md p-4">
+      <div className="flex gap-8 items-center">
+        <div className="text-center">
+          <p className="text-muted-foreground text-sm">Score</p>
           <p className="text-2xl font-bold">{score}</p>
         </div>
         
-        <div className="text-center flex-1">
-          <p className="text-gray-600 text-sm">Questions</p>
-          <p className="text-2xl font-bold">{questionNumber}</p>
-        </div>
-        
-        <div className="text-center flex-1">
-          <p className="text-gray-600 text-sm">Accuracy</p>
-          <p className="text-2xl font-bold">
-            {calculatePercentage()}%
-          </p>
+        <div className="text-center">
+          <p className="text-muted-foreground text-sm">Current Streak</p>
+          <p className="text-2xl font-bold">{streak}</p>
         </div>
         
         <Button 
