@@ -1,34 +1,67 @@
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import { AuthContext, AuthState } from '@/lib/auth'
-import { Profile, supabase } from '@/lib/supabase'
-import { useToast } from './ui/use-toast'
+import { supabase } from '@/lib/supabase'
+
+export interface AuthState {
+  user: User | null
+  profile: any | null
+  isLoading: boolean
+}
+
+export const AuthContext = createContext<{
+  session: AuthState
+  signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string, username: string) => Promise<void>
+  signOut: () => Promise<void>
+  signInWithGoogle: () => Promise<void>
+}>({
+  session: { user: null, profile: null, isLoading: true },
+  signIn: async () => {},
+  signUp: async () => {},
+  signOut: async () => {},
+  signInWithGoogle: async () => {},
+})
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthState>({
     user: null,
     profile: null,
-    loading: true,
+    isLoading: true,
   })
-  const { toast } = useToast()
 
   useEffect(() => {
-    // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchProfile(session.user)
+      if (session) {
+        setSession({
+          user: session.user,
+          profile: null,
+          isLoading: true,
+        })
+        fetchProfile(session.user.id)
       } else {
-        setSession({ user: null, profile: null, loading: false })
+        setSession({
+          user: null,
+          profile: null,
+          isLoading: false,
+        })
       }
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (session?.user) {
-          await fetchProfile(session.user)
+        if (session) {
+          setSession({
+            user: session.user,
+            profile: null,
+            isLoading: true,
+          })
+          await fetchProfile(session.user.id)
         } else {
-          setSession({ user: null, profile: null, loading: false })
+          setSession({
+            user: null,
+            profile: null,
+            isLoading: false,
+          })
         }
       }
     )
@@ -38,88 +71,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const fetchProfile = async (user: User) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+  const fetchProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
 
-      if (error) throw error
-
-      setSession({
-        user,
-        profile: data as Profile,
-        loading: false,
-      })
-    } catch (error) {
+    if (error) {
       console.error('Error fetching profile:', error)
-      setSession({
-        user,
-        profile: null,
-        loading: false,
-      })
+      setSession(s => ({ ...s, isLoading: false }))
+      return
     }
+
+    setSession(s => ({
+      ...s,
+      profile: data,
+      isLoading: false,
+    }))
   }
 
   const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      if (error) throw error
-    } catch (error) {
-      toast({
-        title: "Error signing in",
-        description: error.message,
-        variant: "destructive",
-      })
-      throw error
-    }
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) throw error
   }
 
   const signUp = async (email: string, password: string, username: string) => {
-    try {
-      const { data: { user }, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username: username
-          }
-        }
-      })
-      if (error) throw error
+    const { data: { user }, error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
 
-      // No need to manually insert profile as it's handled by the database trigger
-    } catch (error) {
-      toast({
-        title: "Error signing up",
-        description: error.message,
-        variant: "destructive",
-      })
-      throw error
+    if (error) throw error
+
+    if (user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          username,
+          created_at: new Date().toISOString(),
+        })
+
+      if (profileError) throw profileError
     }
   }
 
   const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-    } catch (error) {
-      toast({
-        title: "Error signing out",
-        description: error.message,
-        variant: "destructive",
-      })
-      throw error
-    }
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+  }
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    })
+
+    if (error) throw error
   }
 
   return (
-    <AuthContext.Provider value={{ session, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, signIn, signUp, signOut, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   )
