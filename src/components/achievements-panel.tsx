@@ -43,7 +43,7 @@ export function AchievementsPanel({ achievements }: AchievementsPanelProps) {
                   : "bg-gray-500/10 border-gray-500/20"
               }`}
             >
-              <div className="font-medium">{achievement.title}</div>
+              <div className="font-medium">{achievement.name}</div>
               <div className="text-sm text-muted-foreground">
                 {achievement.description}
               </div>

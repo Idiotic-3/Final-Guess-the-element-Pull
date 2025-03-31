@@ -4,6 +4,10 @@ import { AuthContext, AuthState } from '@/lib/auth'
 import { Profile, supabase } from '@/lib/supabase'
 import { useToast } from './ui/use-toast'
 
+const REDIRECT_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://finalguesstheelement.vercel.app/auth/callback'
+  : `${window.location.origin}/auth/callback`;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthState>({
     user: null,
@@ -110,7 +114,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: REDIRECT_URL,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     })
 
