@@ -30,17 +30,17 @@ const Index = () => {
   const [streak, setStreak] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
 
-  const handleAnswer = async (answer: string) => {
+  const handleElementClick = (element: ElementData) => {
     if (!currentQuestion) return;
 
-    const isCorrect = answer.toLowerCase() === currentQuestion.correctElement.toLowerCase();
+    const isCorrect = element.symbol.toLowerCase() === currentQuestion.correctElement.toLowerCase();
     
     if (isCorrect) {
       setScore(s => s + 1);
       setStreak(s => s + 1);
       toast({
         title: "Correct!",
-        description: `That's right! It's ${currentQuestion.correctElement}`,
+        description: `That's right! It's ${element.name} (${element.symbol})`,
       });
     } else {
       setStreak(0);
@@ -54,7 +54,7 @@ const Index = () => {
     // If user is logged in, save their progress
     if (session.user) {
       try {
-        await saveProgress(isCorrect);
+        saveProgress(isCorrect);
       } catch (error) {
         console.error('Error saving progress:', error);
       }
@@ -274,9 +274,12 @@ const Index = () => {
         <>
           <QuestionPanel
             question={currentQuestion}
-            onAnswer={handleAnswer}
+            onAnswer={handleElementClick}
           />
-          <PeriodicTable highlightedElement={currentQuestion.correctElement} />
+          <PeriodicTable 
+            onElementClick={handleElementClick}
+            highlightedElement={currentQuestion.correctElement}
+          />
         </>
       )}
     </div>
